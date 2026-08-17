@@ -1,13 +1,9 @@
+import { getStore } from "@netlify/blobs";
 import { getUser } from "@netlify/identity";
 
 const THEME_ROLES = {
   neve: ["neve", "theme-neve", "neve theme"],
   api: ["api", "theme-api", "api vision theme"]
-};
-
-const THEME_ENV = {
-  neve: "NEVE_THEME_DOWNLOAD_URL",
-  api: "API_THEME_DOWNLOAD_URL"
 };
 
 export default async (request) => {
@@ -24,16 +20,14 @@ export default async (request) => {
     return new Response("This theme is not assigned to your account.", { status: 403 });
   }
 
-  const sourceUrl = process.env[THEME_ENV[theme]];
-  if (!sourceUrl) return new Response("Theme package is not available yet.", { status: 404 });
+  const store = getStore("theme-files");
+  const file = await store.get(`${theme}.zip`, { type: "arrayBuffer" });
+  if (!file) return new Response("Theme package is not available yet.", { status: 404 });
 
-  const source = await fetch(sourceUrl);
-  if (!source.ok || !source.body) return new Response("Theme package could not be loaded.", { status: 502 });
-
-  return new Response(source.body, {
+  return new Response(file, {
     status: 200,
     headers: {
-      "Content-Type": source.headers.get("content-type") || "application/zip",
+      "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="LUNA-${theme.toUpperCase()}-Theme.zip"`,
       "Cache-Control": "private, no-store"
     }
