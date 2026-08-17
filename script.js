@@ -1,6 +1,6 @@
 const siteConfig = {
   featuredThemeId: "neve",
-  loaderDownloadUrl: "#",
+  loaderDownloadUrl: "https://github.com/luna-themes/luna-themes-website/releases/download/v3.9.8/LUNA-Theme-Loader-3.9.8.dmg",
   themes: [
     { id:"neve", name:"Neve Theme", description:"Inspired by the legendary Neve 88RS console. Warm, classic and timeless.", price:25, salePrice:null, badge:"NEW", paypalUrl:"#", image:"assets/neve-1.png" },
     { id:"api", name:"API Vision Theme", description:"Modern API console look for LUNA. Clean, bold and powerful.", price:25, salePrice:null, badge:null, paypalUrl:"#", image:"assets/api-1.png" }
