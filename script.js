@@ -12,7 +12,7 @@ function themeCard(theme){
   const badge=sale?`<span class="badge sale">SALE</span>`:(theme.badge?`<span class="badge">${theme.badge}</span>`:"");
   const price=sale?`<div class="price"><s>${euro(theme.price)}</s>${euro(theme.salePrice)}</div>`:`<div class="price">${euro(theme.price)}</div>`;
   const image=theme.image?`<a class="theme-image-link" href="#${theme.id}-gallery"><img src="${theme.image}" alt="${theme.name} screenshot"></a>`:`<span>ADD REAL ${theme.name.toUpperCase()} SCREENSHOT</span>`;
-  return `<article class="theme-card" id="theme-${theme.id}">${badge}<div class="theme-image">${image}</div><h3>${theme.name}</h3><p class="desc">${theme.description}</p><div class="tags"><span> LUNA macOS</span><span>All supported versions</span><span>Theme Loader</span></div><div class="price-row">${price}<a class="btn primary buy-btn buy-theme" href="#contact" data-theme="${theme.name}">BUY THEME</a></div><p class="theme-note">Secure digital delivery after purchase confirmation.</p></article>`;
+  return `<article class="theme-card" id="theme-${theme.id}">${badge}<div class="theme-image">${image}</div><h3>${theme.name}</h3><p class="desc">${theme.description}</p><div class="tags"><span> LUNA macOS</span><span>All supported versions</span><span>Theme Loader</span></div><div class="price-row">${price}<a class="btn primary buy-btn buy-theme" href="#contact" data-theme="${theme.name}">GET THEME</a></div><p class="theme-note">Contact us to arrange purchase and secure digital delivery.</p></article>`;
 }
 const grid=document.getElementById("themeGrid"); grid.innerHTML=siteConfig.themes.map(themeCard).join("");
 const featured=siteConfig.themes.find(t=>t.id===siteConfig.featuredThemeId); if(featured) document.getElementById("featuredName").textContent=featured.name.toUpperCase();
@@ -23,8 +23,22 @@ window.addEventListener("hashchange",()=>{const hash=location.hash;if(!/^#[A-Za-
 function wirePurchaseButtons(){document.querySelectorAll(".buy-theme").forEach(button=>button.addEventListener("click",()=>{const theme=button.dataset.theme;const select=document.getElementById("purchaseTheme");if(theme&&select)select.value=theme}))} wirePurchaseButtons();
 
 document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll(".buy-theme").forEach(button=>{button.textContent="GET THEME";button.setAttribute("aria-label",`Get ${button.dataset.theme||"theme"}`)});
+  const supportLink=document.querySelector('#support .text-link'); if(supportLink) supportLink.textContent="CONTACT / GET THEME →";
+  const contact=document.getElementById("contact");
+  if(contact){
+    const eyebrow=contact.querySelector(".contact-copy .eyebrow"); if(eyebrow) eyebrow.textContent="GET A THEME / CONTACT";
+    const heading=contact.querySelector(".contact-copy h2"); if(heading) heading.textContent="Choose a theme and send us a request.";
+    const intro=contact.querySelector(".contact-copy > p"); if(intro) intro.textContent="Send your request and we will reply with the details needed to complete your order. Payment is arranged directly after contact.";
+    const points=contact.querySelectorAll(".contact-points span");
+    if(points[0]) points[0].innerHTML='Theme price: <strong>€25</strong>';
+    if(points[1]) points[1].textContent="Secure digital delivery";
+    if(points[2]) points[2].textContent="Payment arranged after contact";
+  }
   const form=document.getElementById("purchaseForm"),status=document.getElementById("formStatus"),success=document.getElementById("formSuccess"); if(!form)return;
-  document.querySelectorAll(".buy-theme").forEach(button=>button.addEventListener("click",()=>{const theme=button.dataset.theme,select=document.getElementById("purchaseTheme"),type=document.getElementById("requestType");if(theme&&select)select.value=theme;if(type)type.value="Purchase"}));
+  const requestType=document.getElementById("requestType");
+  if(requestType&&requestType.options[0]){requestType.options[0].textContent="Get a theme";requestType.options[0].value="Theme request"}
+  document.querySelectorAll(".buy-theme").forEach(button=>button.addEventListener("click",()=>{const theme=button.dataset.theme,select=document.getElementById("purchaseTheme"),type=document.getElementById("requestType");if(theme&&select)select.value=theme;if(type)type.value="Theme request"}));
   form.addEventListener("submit",async event=>{event.preventDefault();const endpoint=form.getAttribute("action")||"";if(endpoint.includes("YOUR_FORM_ID")){status.textContent="Secure form endpoint has not been activated yet. Add your Formspree Form ID before testing email delivery.";status.classList.add("active");return}const submitButton=form.querySelector('button[type="submit"]'),originalText=submitButton.textContent;submitButton.disabled=true;submitButton.textContent="SENDING…";status.textContent="Sending your request…";status.classList.add("active");try{const response=await fetch(endpoint,{method:"POST",body:new FormData(form),headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Form service returned an error.");form.reset();form.hidden=true;success.hidden=false;status.textContent=""}catch(error){status.textContent="Message could not be sent. Please try again."}finally{submitButton.disabled=false;submitButton.textContent=originalText}});
 });
 
@@ -40,7 +54,6 @@ document.addEventListener("DOMContentLoaded",()=>{
  close.addEventListener("click",closeViewer);prev.addEventListener("click",()=>move(-1));next.addEventListener("click",()=>move(1));lightbox.addEventListener("click",event=>{if(event.target===lightbox)closeViewer()});document.addEventListener("keydown",event=>{if(!lightbox.classList.contains("open"))return;if(event.key==="Escape")closeViewer();if(event.key==="ArrowLeft")move(-1);if(event.key==="ArrowRight")move(1)});let startX=null;lightbox.addEventListener("touchstart",event=>{startX=event.changedTouches[0].screenX},{passive:true});lightbox.addEventListener("touchend",event=>{if(startX===null)return;const dx=event.changedTouches[0].screenX-startX;if(Math.abs(dx)>50)move(dx>0?-1:1);startX=null},{passive:true});
 });
 
-// Netlify Identity + LUNA Themes customer account panel.
 (function setupNetlifyIdentity(){
   const widgetScript=document.createElement("script");
   widgetScript.src="https://identity.netlify.com/v1/netlify-identity-widget.js";
@@ -49,22 +62,19 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(!window.netlifyIdentity)return;
     const identity=window.netlifyIdentity;
     const accountButton=document.querySelector(".account-btn");
-
     const panel=document.createElement("div");
     panel.className="account-modal";
     panel.setAttribute("aria-hidden","true");
     panel.innerHTML=`<div class="account-backdrop" data-account-close></div><section class="account-panel" role="dialog" aria-modal="true" aria-label="My account"><button class="account-close" type="button" data-account-close aria-label="Close">×</button><span class="eyebrow">LUNA THEMES ACCOUNT</span><h2>My Account</h2><div class="account-user"><span class="account-avatar">L</span><div><small>SIGNED IN AS</small><strong id="accountEmail">—</strong></div></div><div class="account-library"><div class="account-section-head"><div><small>YOUR LIBRARY</small><h3>Your Themes</h3></div><span class="account-status">ACCOUNT ACTIVE</span></div><div id="accountThemes" class="account-themes"></div></div><div class="account-actions"><a href="#themes" class="btn ghost" data-account-close>EXPLORE THEMES</a><button type="button" class="btn account-logout" id="accountLogout">LOG OUT</button></div></section>`;
     document.body.appendChild(panel);
-
     const emailEl=panel.querySelector("#accountEmail");
     const themesEl=panel.querySelector("#accountThemes");
     const logoutButton=panel.querySelector("#accountLogout");
-
     function userRoles(user){return (user&&user.app_metadata&&Array.isArray(user.app_metadata.roles))?user.app_metadata.roles.map(r=>String(r).toLowerCase()):[]}
     function renderLibrary(user){
       const roles=userRoles(user);
       const owned=siteConfig.themes.filter(theme=>roles.includes(theme.id)||roles.includes(`theme-${theme.id}`)||roles.includes(theme.name.toLowerCase()));
-      if(!owned.length){themesEl.innerHTML=`<div class="account-empty"><strong>No themes assigned yet.</strong><p>Your purchased themes will appear here after the order is confirmed.</p><a href="#contact" data-account-close>PURCHASE / CONTACT →</a></div>`;return}
+      if(!owned.length){themesEl.innerHTML=`<div class="account-empty"><strong>No themes assigned yet.</strong><p>Your themes will appear here after your order is confirmed.</p><a href="#contact" data-account-close>GET A THEME / CONTACT →</a></div>`;return}
       themesEl.innerHTML=owned.map(theme=>`<article class="account-theme"><img src="${theme.image}" alt="${theme.name}"><div><small>OWNED THEME</small><strong>${theme.name}</strong><span>Ready for secure delivery</span></div><button class="btn primary account-download" type="button" data-download-theme="${theme.id}">DOWNLOAD</button></article>`).join("");
       themesEl.querySelectorAll("[data-download-theme]").forEach(button=>button.addEventListener("click",()=>downloadTheme(button.dataset.downloadTheme,button)));
     }
@@ -91,18 +101,14 @@ document.addEventListener("DOMContentLoaded",()=>{
       accountButton.textContent="MY ACCOUNT";
       accountButton.setAttribute("aria-label",user?`Open account for ${user.email||"customer"}`:"Log in to your account");
     }
-
     panel.querySelectorAll("[data-account-close]").forEach(el=>el.addEventListener("click",closeAccount));
     logoutButton.addEventListener("click",async()=>{closeAccount();await identity.logout()});
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&panel.classList.contains("open"))closeAccount()});
-
     identity.on("init",refreshAccountButton);
     identity.on("login",()=>{refreshAccountButton();identity.close();openAccount()});
     identity.on("logout",()=>{refreshAccountButton();closeAccount()});
     identity.on("error",error=>console.error("Netlify Identity:",error));
-
     if(accountButton){accountButton.href="#";accountButton.addEventListener("click",event=>{event.preventDefault();openAccount()})}
-
     identity.init({container:null});
     refreshAccountButton();
   };
