@@ -65,7 +65,20 @@ document.addEventListener("DOMContentLoaded",()=>{
       const roles=userRoles(user);
       const owned=siteConfig.themes.filter(theme=>roles.includes(theme.id)||roles.includes(`theme-${theme.id}`)||roles.includes(theme.name.toLowerCase()));
       if(!owned.length){themesEl.innerHTML=`<div class="account-empty"><strong>No themes assigned yet.</strong><p>Your purchased themes will appear here after the order is confirmed.</p><a href="#contact" data-account-close>PURCHASE / CONTACT →</a></div>`;return}
-      themesEl.innerHTML=owned.map(theme=>`<article class="account-theme"><img src="${theme.image}" alt="${theme.name}"><div><small>OWNED THEME</small><strong>${theme.name}</strong><span>Ready for secure delivery</span></div></article>`).join("");
+      themesEl.innerHTML=owned.map(theme=>`<article class="account-theme"><img src="${theme.image}" alt="${theme.name}"><div><small>OWNED THEME</small><strong>${theme.name}</strong><span>Ready for secure delivery</span></div><button class="btn primary account-download" type="button" data-download-theme="${theme.id}">DOWNLOAD</button></article>`).join("");
+      themesEl.querySelectorAll("[data-download-theme]").forEach(button=>button.addEventListener("click",()=>downloadTheme(button.dataset.downloadTheme,button)));
+    }
+    async function downloadTheme(themeId,button){
+      const user=identity.currentUser(); if(!user){identity.open("login");return}
+      const original=button.textContent;button.disabled=true;button.textContent="PREPARING…";
+      try{
+        const token=await user.jwt();
+        const response=await fetch(`/.netlify/functions/theme-download?theme=${encodeURIComponent(themeId)}`,{headers:{Authorization:`Bearer ${token}`}});
+        if(!response.ok)throw new Error(await response.text()||"Download failed.");
+        const blob=await response.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`LUNA-${themeId.toUpperCase()}-Theme.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+        button.textContent="DOWNLOADED";setTimeout(()=>{button.textContent=original;button.disabled=false},1800);return;
+      }catch(error){alert(error.message||"Theme could not be downloaded.")}
+      button.textContent=original;button.disabled=false;
     }
     function openAccount(){
       const user=identity.currentUser(); if(!user){identity.open("login");return}
