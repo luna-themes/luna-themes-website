@@ -1,0 +1,50 @@
+.gallery-main .gallery-zoom-control{
+  position:absolute;
+  right:14px;
+  bottom:14px;
+  z-index:4;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  width:auto;
+  min-width:0;
+  height:auto;
+  padding:8px 10px;
+  background:rgba(7,18,27,.92);
+  border:1px solid #385264;
+  border-radius:9px;
+  color:#dce8ef;
+  white-space:nowrap;
+  pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.gallery-main .gallery-zoom-text{
+  display:block;
+  font-size:9px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+.gallery-main .gallery-zoom-bubble{
+  display:grid;
+  place-items:center;
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
+  border-radius:50%;
+  background:#050b10;
+}
+.gallery-main .gallery-zoom-bubble svg{
+  width:14px;
+  height:14px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+@media(max-width:640px){
+  .gallery-main .gallery-zoom-control{right:10px;bottom:10px;padding:7px 8px;gap:6px}
+  .gallery-main .gallery-zoom-text{font-size:8px}
+  .gallery-main .gallery-zoom-bubble{width:22px;height:22px;flex-basis:22px}
+}
