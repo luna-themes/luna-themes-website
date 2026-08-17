@@ -39,3 +39,42 @@ document.addEventListener("DOMContentLoaded",()=>{
  document.querySelectorAll(".gallery-main").forEach(button=>{const img=button.querySelector("img");if(!img)return;const section=button.closest(".theme-detail"),name=(section&&section.id==="api-gallery")?"api":"neve";button.classList.add("zoomable-main");button.dataset.gallery=name;if(!button.querySelector(".gallery-zoom-control"))button.insertAdjacentHTML("afterbegin",overlay);button.addEventListener("click",event=>{event.preventDefault();openViewer(name,img.getAttribute("src"))})});
  close.addEventListener("click",closeViewer);prev.addEventListener("click",()=>move(-1));next.addEventListener("click",()=>move(1));lightbox.addEventListener("click",event=>{if(event.target===lightbox)closeViewer()});document.addEventListener("keydown",event=>{if(!lightbox.classList.contains("open"))return;if(event.key==="Escape")closeViewer();if(event.key==="ArrowLeft")move(-1);if(event.key==="ArrowRight")move(1)});let startX=null;lightbox.addEventListener("touchstart",event=>{startX=event.changedTouches[0].screenX},{passive:true});lightbox.addEventListener("touchend",event=>{if(startX===null)return;const dx=event.changedTouches[0].screenX-startX;if(Math.abs(dx)>50)move(dx>0?-1:1);startX=null},{passive:true});
 });
+
+// Netlify Identity: invite acceptance, password setup, login and logout.
+(function setupNetlifyIdentity(){
+  const widgetScript=document.createElement("script");
+  widgetScript.src="https://identity.netlify.com/v1/netlify-identity-widget.js";
+  widgetScript.async=true;
+  widgetScript.onload=()=>{
+    if(!window.netlifyIdentity)return;
+    const identity=window.netlifyIdentity;
+    identity.init({container:null});
+    const accountButton=document.querySelector(".account-btn");
+    const refreshAccountButton=()=>{
+      if(!accountButton)return;
+      const user=identity.currentUser();
+      accountButton.textContent=user?"LOG OUT":"MY ACCOUNT";
+      accountButton.setAttribute("aria-label",user?`Log out ${user.email||"account"}`:"Log in to your account");
+    };
+    if(accountButton){
+      accountButton.href="#";
+      accountButton.addEventListener("click",event=>{
+        event.preventDefault();
+        if(identity.currentUser()) identity.logout();
+        else identity.open("login");
+      });
+    }
+    identity.on("init",refreshAccountButton);
+    identity.on("login",()=>{refreshAccountButton();identity.close();});
+    identity.on("logout",refreshAccountButton);
+    identity.on("error",error=>console.error("Netlify Identity:",error));
+    refreshAccountButton();
+    // Invite/recovery/confirmation links contain a token in the URL hash.
+    // The widget detects these hashes and opens the correct password/account flow.
+    const hash=window.location.hash||"";
+    if(/#(invite_token|recovery_token|confirmation_token|email_change_token)=/.test(hash)){
+      setTimeout(()=>identity.open(),150);
+    }
+  };
+  document.head.appendChild(widgetScript);
+})();
