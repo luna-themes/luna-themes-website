@@ -12,7 +12,7 @@ function themeCard(theme){
   const badge=sale?`<span class="badge sale">SALE</span>`:(theme.badge?`<span class="badge">${theme.badge}</span>`:"");
   const price=sale?`<div class="price"><s>${euro(theme.price)}</s>${euro(theme.salePrice)}</div>`:`<div class="price">${euro(theme.price)}</div>`;
   const image=theme.image?`<a class="theme-image-link" href="#${theme.id}-gallery"><img src="${theme.image}" alt="${theme.name} screenshot"></a>`:`<span>ADD REAL ${theme.name.toUpperCase()} SCREENSHOT</span>`;
-  return `<article class="theme-card" id="theme-${theme.id}">${badge}<div class="theme-image">${image}</div><h3>${theme.name}</h3><p class="desc">${theme.description}</p><div class="tags"><span> LUNA macOS</span><span>All supported versions</span><span>Theme Loader</span></div><div class="price-row">${price}<a class="btn primary buy-btn buy-theme" href="#contact" data-theme="${theme.name}">BUY THEME</a></div><p class="theme-note">PayPal link placeholder — replace with your real PayPal Payment Link.</p></article>`;
+  return `<article class="theme-card" id="theme-${theme.id}">${badge}<div class="theme-image">${image}</div><h3>${theme.name}</h3><p class="desc">${theme.description}</p><div class="tags"><span> LUNA macOS</span><span>All supported versions</span><span>Theme Loader</span></div><div class="price-row">${price}<a class="btn primary buy-btn buy-theme" href="#contact" data-theme="${theme.name}">BUY THEME</a></div><p class="theme-note">Secure digital delivery after purchase confirmation.</p></article>`;
 }
 const grid=document.getElementById("themeGrid"); grid.innerHTML=siteConfig.themes.map(themeCard).join("");
 const featured=siteConfig.themes.find(t=>t.id===siteConfig.featuredThemeId); if(featured) document.getElementById("featuredName").textContent=featured.name.toUpperCase();
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded",()=>{
  close.addEventListener("click",closeViewer);prev.addEventListener("click",()=>move(-1));next.addEventListener("click",()=>move(1));lightbox.addEventListener("click",event=>{if(event.target===lightbox)closeViewer()});document.addEventListener("keydown",event=>{if(!lightbox.classList.contains("open"))return;if(event.key==="Escape")closeViewer();if(event.key==="ArrowLeft")move(-1);if(event.key==="ArrowRight")move(1)});let startX=null;lightbox.addEventListener("touchstart",event=>{startX=event.changedTouches[0].screenX},{passive:true});lightbox.addEventListener("touchend",event=>{if(startX===null)return;const dx=event.changedTouches[0].screenX-startX;if(Math.abs(dx)>50)move(dx>0?-1:1);startX=null},{passive:true});
 });
 
-// Netlify Identity: invite acceptance, password recovery, login and logout.
+// Netlify Identity + LUNA Themes customer account panel.
 (function setupNetlifyIdentity(){
   const widgetScript=document.createElement("script");
   widgetScript.src="https://identity.netlify.com/v1/netlify-identity-widget.js";
@@ -49,33 +49,47 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(!window.netlifyIdentity)return;
     const identity=window.netlifyIdentity;
     const accountButton=document.querySelector(".account-btn");
-    const refreshAccountButton=()=>{
-      if(!accountButton)return;
-      const user=identity.currentUser();
-      accountButton.textContent=user?"LOG OUT":"MY ACCOUNT";
-      accountButton.setAttribute("aria-label",user?`Log out ${user.email||"account"}`:"Log in to your account");
-    };
 
-    // IMPORTANT: register token-flow listeners BEFORE init().
-    // init() processes invite/recovery tokens immediately and can emit these events.
-    identity.on("init",refreshAccountButton);
-    identity.on("login",()=>{refreshAccountButton();identity.close();});
-    identity.on("logout",refreshAccountButton);
-    identity.on("error",error=>console.error("Netlify Identity:",error));
-    identity.on("open",refreshAccountButton);
+    const panel=document.createElement("div");
+    panel.className="account-modal";
+    panel.setAttribute("aria-hidden","true");
+    panel.innerHTML=`<div class="account-backdrop" data-account-close></div><section class="account-panel" role="dialog" aria-modal="true" aria-label="My account"><button class="account-close" type="button" data-account-close aria-label="Close">×</button><span class="eyebrow">LUNA THEMES ACCOUNT</span><h2>My Account</h2><div class="account-user"><span class="account-avatar">L</span><div><small>SIGNED IN AS</small><strong id="accountEmail">—</strong></div></div><div class="account-library"><div class="account-section-head"><div><small>YOUR LIBRARY</small><h3>Your Themes</h3></div><span class="account-status">ACCOUNT ACTIVE</span></div><div id="accountThemes" class="account-themes"></div></div><div class="account-actions"><a href="#themes" class="btn ghost" data-account-close>EXPLORE THEMES</a><button type="button" class="btn account-logout" id="accountLogout">LOG OUT</button></div></section>`;
+    document.body.appendChild(panel);
 
-    if(accountButton){
-      accountButton.href="#";
-      accountButton.addEventListener("click",event=>{
-        event.preventDefault();
-        if(identity.currentUser()) identity.logout();
-        else identity.open("login");
-      });
+    const emailEl=panel.querySelector("#accountEmail");
+    const themesEl=panel.querySelector("#accountThemes");
+    const logoutButton=panel.querySelector("#accountLogout");
+
+    function userRoles(user){return (user&&user.app_metadata&&Array.isArray(user.app_metadata.roles))?user.app_metadata.roles.map(r=>String(r).toLowerCase()):[]}
+    function renderLibrary(user){
+      const roles=userRoles(user);
+      const owned=siteConfig.themes.filter(theme=>roles.includes(theme.id)||roles.includes(`theme-${theme.id}`)||roles.includes(theme.name.toLowerCase()));
+      if(!owned.length){themesEl.innerHTML=`<div class="account-empty"><strong>No themes assigned yet.</strong><p>Your purchased themes will appear here after the order is confirmed.</p><a href="#contact" data-account-close>PURCHASE / CONTACT →</a></div>`;return}
+      themesEl.innerHTML=owned.map(theme=>`<article class="account-theme"><img src="${theme.image}" alt="${theme.name}"><div><small>OWNED THEME</small><strong>${theme.name}</strong><span>Ready for secure delivery</span></div></article>`).join("");
+    }
+    function openAccount(){
+      const user=identity.currentUser(); if(!user){identity.open("login");return}
+      emailEl.textContent=user.email||"LUNA Themes customer"; renderLibrary(user);
+      panel.classList.add("open");panel.setAttribute("aria-hidden","false");document.body.classList.add("account-open");
+    }
+    function closeAccount(){panel.classList.remove("open");panel.setAttribute("aria-hidden","true");document.body.classList.remove("account-open")}
+    function refreshAccountButton(){
+      if(!accountButton)return; const user=identity.currentUser();
+      accountButton.textContent="MY ACCOUNT";
+      accountButton.setAttribute("aria-label",user?`Open account for ${user.email||"customer"}`:"Log in to your account");
     }
 
-    // The widget itself handles #invite_token=... and #recovery_token=...
-    // during init and opens the correct password flow. Do not replace it
-    // with identity.open(), which would force the normal login screen.
+    panel.querySelectorAll("[data-account-close]").forEach(el=>el.addEventListener("click",closeAccount));
+    logoutButton.addEventListener("click",async()=>{closeAccount();await identity.logout()});
+    document.addEventListener("keydown",event=>{if(event.key==="Escape"&&panel.classList.contains("open"))closeAccount()});
+
+    identity.on("init",refreshAccountButton);
+    identity.on("login",()=>{refreshAccountButton();identity.close();openAccount()});
+    identity.on("logout",()=>{refreshAccountButton();closeAccount()});
+    identity.on("error",error=>console.error("Netlify Identity:",error));
+
+    if(accountButton){accountButton.href="#";accountButton.addEventListener("click",event=>{event.preventDefault();openAccount()})}
+
     identity.init({container:null});
     refreshAccountButton();
   };
